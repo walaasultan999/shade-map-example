@@ -17,6 +17,7 @@
             padding: 0px;
             margin: 0px;
             display: flex;
+            flex-direction: column;
         }
 
         #mapid {
@@ -51,44 +52,29 @@
         }
 
         /* Search box styling */
-        #search-box-container {
-            width: 300px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-left: 1px solid #ddd;
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-        }
-
-        #search-box-container h3 {
-            margin: 0 0 10px;
-            font-size: 18px;
-            color: #333;
-        }
-
         #search-box {
-            width: 100%;
-            padding: 10px;
+            width: 200px;
+            margin: 10px auto;
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            font-size: 14px;
+            text-align: center;
         }
     </style>
     <title>Shade Map Leaflet Example</title>
 </head>
 
 <body>
+    <!-- Search Box for location input -->
+    <input id="search-box" type="text" placeholder="Enter location or lat, long" />
+
     <!-- Map container -->
     <div id="mapid"></div>
-
-    <!-- Search box container -->
-    <div id="search-box-container">
-        <h3>Search Location</h3>
-        <input id="search-box" type="text" placeholder="Enter location..." />
-    </div>
 
     <div class="leaflet-control-container">
         <div class="leaflet-top leaflet-left">
             <div class="leaflet-control-time leaflet-control">
-                <!-- Title Added Here -->
                 <h2 style="text-align: Start; margin: 0 0 10px;">Layout Zoo / Site Analysis Tools</h2>
                 <button id="decrement">-1 hour</button>
                 <button id="increment">+1 hour</button>
@@ -142,70 +128,96 @@
         /* End ShadeMap setup */
 
         /* Controls setup */
-		let intervalTimer;
-		const increment = document.getElementById('increment');
-		const decrement = document.getElementById('decrement');
-		const play = document.getElementById('play');
-		const stop = document.getElementById('stop');
-		const exposure = document.getElementById('exposure');
-		const exposureGradientContainer = document.getElementById('exposure-gradient-container');
-		const exposureGradient = document.getElementById('exposure-gradient');
+        let intervalTimer;
+        const increment = document.getElementById('increment');
+        const decrement = document.getElementById('decrement');
+        const play = document.getElementById('play');
+        const stop = document.getElementById('stop');
+        const exposure = document.getElementById('exposure');
+        const exposureGradientContainer = document.getElementById('exposure-gradient-container');
+        const exposureGradient = document.getElementById('exposure-gradient');
 
-		increment.addEventListener('click', () => {
-			now = new Date(now.getTime() + 3600000);
-			shadeMap.setDate(now);
-		}, false);
+        increment.addEventListener('click', () => {
+            now = new Date(now.getTime() + 3600000);
+            shadeMap.setDate(now);
+        }, false);
 
-		decrement.addEventListener('click', () => {
-			now = new Date(now.getTime() - 3600000);
-			shadeMap.setDate(now);
-		}, false);
+        decrement.addEventListener('click', () => {
+            now = new Date(now.getTime() - 3600000);
+            shadeMap.setDate(now);
+        }, false);
 
-		play.addEventListener('click', () => {
-			intervalTimer = setInterval(() => {
-				now = new Date(now.getTime() + 60000);
-				shadeMap.setDate(now);
-			}, 100);
-		});
+        play.addEventListener('click', () => {
+            intervalTimer = setInterval(() => {
+                now = new Date(now.getTime() + 60000);
+                shadeMap.setDate(now);
+            }, 100);
+        });
 
-		stop.addEventListener('click', () => {
-			clearInterval(intervalTimer);
-		})
+        stop.addEventListener('click', () => {
+            clearInterval(intervalTimer);
+        });
 
-		exposure.addEventListener('click', (e) => {
-			clearInterval(intervalTimer);
-			const target = e.target;
-			if (!target.checked) {
-				shadeMap && shadeMap.setSunExposure(false);
-				increment.disabled = false;
-				decrement.disabled = false;
-				play.disabled = false;
-				stop.disabled = false;
-				exposureGradientContainer.style.display = 'none';
-			} else {
-				const { lat, lng } = map.getCenter();
-				const { sunrise, sunset } = SunCalc.getTimes(now, lat, lng);
-				shadeMap && shadeMap.setSunExposure(true, {
-					startDate: sunrise,
-					endDate: sunset
-				});
-				increment.disabled = true
-				decrement.disabled = true;
-				play.disabled = true;
-				stop.disabled = true;
+        exposure.addEventListener('click', (e) => {
+            clearInterval(intervalTimer);
+            const target = e.target;
+            if (!target.checked) {
+                shadeMap && shadeMap.setSunExposure(false);
+                increment.disabled = false;
+                decrement.disabled = false;
+                play.disabled = false;
+                stop.disabled = false;
+                exposureGradientContainer.style.display = 'none';
+            } else {
+                const { lat, lng } = map.getCenter();
+                const { sunrise, sunset } = SunCalc.getTimes(now, lat, lng);
+                shadeMap && shadeMap.setSunExposure(true, {
+                    startDate: sunrise,
+                    endDate: sunset
+                });
+                increment.disabled = true
+                decrement.disabled = true;
+                play.disabled = true;
+                stop.disabled = true;
 
-				const hours = (sunset - sunrise) / 1000 / 3600;
-				const partial = hours - Math.floor(hours);
-				const html = [];
-				for (let i = 0; i < hours; i++) {
-					html.push(`<div>${i + 1}</div>`)
-				}
-				html.push(`<div style="flex: ${partial}"></div>`);
-				exposureGradientContainer.style.display = 'block';
-				exposureGradient.innerHTML = html.join('');
-			}
-		})
-		/* End controls setup */
+                const hours = (sunset - sunrise) / 1000 / 3600;
+                const partial = hours - Math.floor(hours);
+                const html = [];
+                for (let i = 0; i < hours; i++) {
+                    html.push(`<div>${i + 1}</div>`)
+                }
+                html.push(`<div style="flex: ${partial}"></div>`);
+                exposureGradientContainer.style.display = 'block';
+                exposureGradient.innerHTML = html.join('');
+            }
+        });
+
+        /* Map Location Search */
+        const searchBox = document.getElementById('search-box');
+        searchBox.addEventListener('input', async () => {
+            const query = searchBox.value.trim();
+            if (query) {
+                let lat, lng;
+                if (query.includes(',')) {
+                    // If it's a lat,long entry, parse it
+                    [lat, lng] = query.split(',').map(Number);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        map.setView([lat, lng], 18);
+                    }
+                } else {
+                    // Otherwise, treat it as a location name and geocode it
+                    const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+                    const response = await fetch(geocodeUrl);
+                    const data = await response.json();
+                    if (data && data[0]) {
+                        lat = parseFloat(data[0].lat);
+                        lng = parseFloat(data[0].lon);
+                        map.setView([lat, lng], 18);
+                    }
+                }
+            }
+        });
+        /* End Map Location Search */
     </script>
 </body>
 
